@@ -141,7 +141,7 @@
      (println ":d f wrt - differentiate an existing function f with respect to wrt")
      (println "    example: :d g x [differentiates g(x, y) with respect to x]")
      (newline)
-     (println ":e (dadb args ...) - evaluate the derivative dadb at point (args ...)")
+     (println ":e (da/db args ...) - evaluate the derivative da/db at point (args ...)")
      (newline)
      (println ":l - list all functions in the symbol table")
      (newline)
