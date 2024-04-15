@@ -1,7 +1,7 @@
 ;;; Konstantin Astafurov's automatic differentiation program
 ;;; R5RS Scheme compatible
 
-; (import (srfi 1))
+(import (srfi 1))
 
 (define (print . args)
   (map display args))
@@ -10,6 +10,8 @@
   (map display args)
   (newline))
 
+(define (fn f)
+  (car f))
 ;; Accessors
 (define (x1 f)
   (cadr f))
@@ -31,6 +33,53 @@
      `(cos ,(x1 f)))
     ((cos)
      `(- (sin ,(x1 f))))))
+
+;; feels shoddy. I'll come up with proper abstractions later,
+;; this one is likely premature
+(define (transform-sexpr l f post)
+  (if (pair? l)
+    (post (map (lambda (l) (rec-transform l f post))
+               l))
+    (f l)))
+
+(define (prune-identities l)
+  (define (eval-identity-ops identity-num l)
+   (let* ((pruned (filter 
+                    (lambda (x) (or (not (number? x)) (not (= x identity-num)))) 
+                    (cdr l)))
+          (num-args (length pruned)))
+     (cond
+       ((= num-args 0) identity-num)
+       ((= num-args 1) (car pruned))
+       (else `(,(fn l) ,@pruned)))))
+  (define (post l)
+    (case (fn l)
+      ((+ -)
+       (eval-identity-ops 0 l))
+      ((*)
+       (if (member 0 l)
+         0
+         (eval-identity-ops 1 l)
+         ))
+      ((/)
+       ;; ignore div by 0 even though we can catch it here
+       ;; why bother?
+       (cond
+         ((= (x1 l) 0) 0)
+         ((= (x2 l) 1) (x1 l))
+         (else l)))
+      ((exp)
+       (if (= (x1 l) 0)
+         1
+         l))
+      ((expt)
+       (cond
+         ((= (x2 l) 0) 1)
+         ((= (x2 l) 1) (x1 l))
+         (else l)))
+      (else l))
+  )
+  (rec-transform l (lambda (x) x) post))
 
 (define (diff f wrt)
   (define (chain f g)
@@ -111,7 +160,7 @@
      (let* ((f (read))
             (wrt (read))
             (info (saferef f cont))
-            (diffed (diff (cadr info) wrt))
+            (diffed (prune-identities (diff (cadr info) wrt)))
             (vars (car info))
             (deriv-name (string-append "d" (symbol->string f)
                                        "/d" (symbol->string wrt)))
