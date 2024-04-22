@@ -38,7 +38,7 @@
 ;; this one is likely premature
 (define (transform-sexpr l f post)
   (if (pair? l)
-    (post (map (lambda (l) (rec-transform l f post))
+    (post (map (lambda (l) (transform-sexpr l f post))
                l))
     (f l)))
 
@@ -79,7 +79,7 @@
          (else l)))
       (else l))
   )
-  (rec-transform l (lambda (x) x) post))
+  (transform-sexpr l (lambda (x) x) post))
 
 (define (diff f wrt)
   (define (chain f g)
