@@ -11,6 +11,9 @@
   (map display args)
   (newline))
 
+(define (print-list l)
+  (map println l))
+
 
 ;; Accessors
 
@@ -207,6 +210,10 @@
      (newline)
      (println ":eg (grad-g args ...) - evaluate the gradient grad-g at point (args ...)")
      (newline)
+     (println ":hessian f - compute the hessian of f")
+     (newline)
+     (println ":eh (hess-f args ...) - evaluate the hessian hess-f at point (args ...)")
+     (newline)
      (println ":e (da/db args ...) - evaluate the derivative da/db at point (args ...)")
      (newline)
      (println ":l - list all functions in the symbol table")
@@ -261,6 +268,29 @@
        (apply println "Derivative: " `((,deriv-sym . ,vars) " = " ,diffed))
        (set! symbol-table (cons `(,deriv-sym . (,vars ,diffed)) symbol-table))
        (println "Saved derivative in symbol table (use :l to list)")))
+    ((:hessian)
+     (let* ((f (read))
+            (info (saferef f cont))
+            (vars (car info))
+            (hess (symbolic-hessian (cadr info) vars))
+            (hess-name (string-append "hess-" (symbol->string f)))
+            (hess-sym (string->symbol hess-name)))
+       (apply println "Hessian: " `((,hess-sym . ,vars) " ="))
+       (print-list hess)
+       ;; weaving in a `list` so a future lambda made with `eval`
+       ;; will not try to evaluate (x y z) as a function call
+       (set! symbol-table 
+         (cons `(,hess-sym . (,vars (list ,@(map (lambda (l) `(list . ,l)) hess))))
+               symbol-table))
+       (println "Saved hessian in symbol table (use :l to list)")))
+    ((:eh)
+     (let* ((sexp (read))
+            (info (saferef (car sexp) cont))
+            (vars (car info))
+            (hess (cadr info))
+            (hess-lambda (eval `(lambda ,vars ,hess)))
+            (res (apply hess-lambda (cdr sexp))))
+       (print-list res)))
     ((:e)
      (let* ((sexp (read))
             (info (saferef (car sexp) cont))
@@ -270,7 +300,8 @@
             (res (apply deriv-lambda (cdr sexp))))
        (println res)))
     ((:l)
-     (println "Symbol table: " symbol-table))
+     (println "Symbol table: ")
+     (print-list symbol-table))
     (else (println "Unknown command, try :help"))))
 
 (define (main)
