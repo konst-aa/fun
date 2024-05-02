@@ -129,7 +129,7 @@
 
 ;;; Other operations
 
-;;; this *should* work lol
+;;; this *should* work
 (define (compose . args)
   (lambda (x)
     (let ((acc x))
