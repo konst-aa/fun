@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # DO NOT RUN THIS SCRIPT LOCALLY
+# THIS SCRIPT IS FROM https://github.com/konst-aa/fun
 
 if [ -d .git ]; then
   echo "ERROR: .git/ already exists, and I don't want to delete it if this script was called by accident."
