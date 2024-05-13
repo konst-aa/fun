@@ -17,7 +17,7 @@ git clone --depth 1  --filter=blob:none  --no-checkout \
 mv fun/.git .
 rm -d fun
 
-# change stuff here, to taste
+# change stuff here to taste
 TO_CHECKOUT=(
     "README.md"
     "LICENSE"
@@ -31,6 +31,7 @@ git checkout main -- ${TO_CHECKOUT[@]}
 
 mv README.md README-TEMP.md
 echo "# THIS README IS FOR THE REPOSITORY THIS SCRIPT BELONGS TO: [https://github.com/konst-aa/fun]" > README.md
-echo "Please refer to this program's entry in the **rundown** section of the README" >> README.md
+echo "See the program's entry in the **rundown** section of the README for more information   " >> README.md
+echo "If there is a bug in the code, feel free to contact me, or put up an issue. Email: konstantin.astafurov@gmail.com   " >> README.md
 cat README-TEMP.md >> README.md
 rm README-TEMP.md
