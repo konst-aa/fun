@@ -21,5 +21,18 @@
       ];
     };
 
+    devShells.x86_64-linux.mips-c-vm = pkgs.mkShell {
+      name = "mips-c-vm";
+      buildInputs = with pkgs.chickenPackages.chickenEggs; [
+        pkgs.chicken
+        breadline
+        pkgs.gnumake
+        pkgs.SDL2
+        pkgs.pkg-config
+        pkgs.gcc
+        pkgs.mars-mips
+        # pkgs.chibi
+      ];
+    };
   };
 }
