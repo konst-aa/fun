@@ -1,5 +1,5 @@
 ;;; Konstantin Astafurov's automatic differentiation program
-;;; R5RS Scheme compatible
+;;; Mostly R5RS Scheme compatible.
 
 (import (srfi 1))
 
@@ -23,6 +23,8 @@
   (cadr f))
 (define (x2 f)
   (caddr f))
+(define (args f)
+  (cdr f))
 (define (rest f)
   (cddr f))
 
@@ -50,17 +52,17 @@
     ((and (pair? f)
           (null? (cddr f))
           (member (car f) '(* + /)))
-     (case (car f)
+     (case (fn f)
        ((+ *)  ; identity ops: (* x), (+ x), etc.
         (diff (x1 f) wrt))
        ((/)
         (diff `(/ 1 ,(x1 f)) wrt))))
     ((pair? f)
-     (case (car f)
-       ((+) `(+ ,@(map (lambda (f) (diff f wrt)) (cdr f))))
-       ((-) `(- ,(diff `(+ ,@(cdr f)) wrt)))
-       ((*) `(+ (* ,(diff (x1 f) wrt) ,@(rest f))
-              (* ,(x1 f) ,(diff `(* ,@(rest f)) wrt))))
+     (case (fn f)
+       ((+) `(+ . ,(map (lambda (f) (diff f wrt)) (args f))))
+       ((-) `(- . ,(map (lambda (f) (diff f wrt)) (args f))))
+       ((*) `(+ (* ,(diff (x1 f) wrt) . ,(rest f))
+                (* ,(x1 f) ,(diff `(* . ,(rest f)) wrt))))
        ((/) `(/ (- (* ,(diff (x1 f) wrt) ,(x2 f))
                    (* ,(x1 f) ,(diff (x2 f) wrt)))
               (expt ,(x2 f) 2)))
@@ -72,18 +74,15 @@
 
 ;;; Simplifying expressions:
 (define (rec-transform t l)
-  ;; feels shoddy. I'll come up with proper abstractions later,
-  ;; this one is likely premature.
-  ;; Also, this might need better control flow, but not yet.
   (if (pair? l)
     (t (map (lambda (nl) (rec-transform t nl)) l))
     l))
 
 (define (prune-identities l)
   (define (eval-identity-ops identity-num l)
-    (let* ((pruned (filter
-                     (lambda (x) (or (not (number? x)) (not (= x identity-num))))
-                     (cdr l)))
+    (let* ((pruned (filter (lambda (x) (or (not (number? x)) 
+                                           (not (equal? x identity-num))))
+                            (cdr l)))
            (num-args (length pruned)))
       (cond
         ((= num-args 0) identity-num)
@@ -102,17 +101,17 @@
        ;; ignore div by 0 even though we can catch it here
        ;; why bother?
        (cond
-         ((= (x1 l) 0) 0)
-         ((= (x2 l) 1) (x1 l))
+         ((equal? (x1 l) 0) 0)
+         ((equal? (x2 l) 1) (x1 l))
          (else l)))
       ((exp)
-       (if (= (x1 l) 0)
+       (if (equal? (x1 l) 0)
          1
          l))
       ((expt)
        (cond
-         ((= (x2 l) 0) 1)
-         ((= (x2 l) 1) (x1 l))
+         ((equal? (x2 l) 0) 1)
+         ((equal? (x2 l) 1) (x1 l))
          (else l)))
       (else l))
     )
@@ -121,7 +120,7 @@
 (define (collapse-literals l)
   (define (transform l)
     (let ((op (fn l)))
-      (if (and (every number? (cdr l))
+      (if (and (every number? (args l))
                (member op '(+ * -)))
         (eval l)
         l)))
@@ -144,7 +143,7 @@
     `(,sym ,@args)))
 
 (define (gradient f vars)
-  (map (lambda (v) (prune-identities (diff f v))) vars))
+  (map (lambda (v) (full-prune (diff f v))) vars))
 
 (define (dot a b)
   (apply + (map * a b)))
@@ -183,7 +182,7 @@
 (define (saferef val cont)
   (let ((maybe-val (assoc val symbol-table)))
     (cond
-      ((eq? maybe-val #f) ; fun fact: (null? #f) is #f, only (null? '()) is #t
+      ((equal? maybe-val #f) ; fun fact: (null? #f) is #f, only (null? '()) is #t
        (println "Symbol missing, try calling :l to list all symbols")
        (cont (list)))
       (else (cdr maybe-val)))))
@@ -311,3 +310,4 @@
 (println "Welcome! write :help or :h for help, :exit to exit.")
 (println "Available functions: + - * / expt exp sqrt sin cos")
 (main)
+
