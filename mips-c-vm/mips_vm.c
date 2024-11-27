@@ -19,6 +19,7 @@ typedef struct {
 
 int pc;
 int registers[32];
+char graphical = 0;
 char addrs[1000];
 char data[0x100000];
 char stack[1000];
@@ -169,6 +170,9 @@ void syscall(short rs, short rt, short rd) {
     switch (registers[V0]) {
         case PRINT_INT:
             printf("%d", registers[A0]);
+            break;
+        case PRINT_CHAR:
+            printf("%c", registers[A0]);
             break;
     }
 }
@@ -376,6 +380,7 @@ int main(int argc, char ** argv) {
                We distinguish them by their indices. */
             {"help",  no_argument,  0, 'h'},
             {"data",  required_argument, 0, 'd'},
+            {"graphical",  no_argument, 0, 'g'},
             /* {0, 0} */
         };
         /* getopt_long stores the option index here. */
@@ -395,7 +400,10 @@ int main(int argc, char ** argv) {
                 printf("Usage: mips-vm [options] [mips-file]\n");
                 printf("       leave mips-file empty to read from stdin\n");
                 printf("       -d, --data <file>  Load .data from file\n");
+                printf("       -g, --graphical Treat the next 256x512 words from address 0x10010000 as a display buffer\n");
                 return 0;
+            case 'g':
+                graphical = 1;
             default:
                 break;
         }
@@ -434,7 +442,7 @@ int main(int argc, char ** argv) {
     long prev = 0;
     while (pc < MAX_ADDR) {
         registers[ZERO] = 0;
-        if (SDL_GetTicks64() - prev > 1000 / 1000) {
+        if (graphical && SDL_GetTicks64() - prev > 1000 / 1000) {
             /* printf("pc: %d\n", pc); */
             update_screen();
             prev = SDL_GetTicks64();
@@ -485,6 +493,10 @@ int main(int argc, char ** argv) {
             pc += 4;
         }
     }
-    printf("ADDR: %.8x\n", pc + 0x00400000);
-    SDL_Delay(4000);
+    /* printf("ADDR: %.8x\n", pc + 0x00400000); */
+    printf("\n");
+    if (graphical) {
+        update_screen();
+        SDL_Delay(4000);
+    }
 }

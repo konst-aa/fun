@@ -11,14 +11,18 @@ data:
 text:
 	Mars a dump .text Binary mips-text $(masm)
 
-run:
+run-regular:
 	./mips-vm mips-text --data mips-data
+
+run-graphical:
+	./mips-vm mips-text --data mips-data --graphical
 
 
 mergesort: masm:=../mips-programs/mergesort.asm
-mergesort: data text vm run
+mergesort: data text vm run-regular
 
 proj1-5: masm:=../mips-programs/proj1-5.asm
-proj1-5: data text vm run
+proj1-5: data text vm run-graphical
+# ^^^ remove vm as a ingredient if running inside nix, as graphical doesn't work there
 
 example: mergesort

@@ -4,7 +4,8 @@
 
 (cond-expand
   (chicken 
-    (import (chicken process-context)))
+    (import (chicken process-context)
+            r7rs))
   (chibi 
     (import (scheme process-context))
     (define (command-line-arguments)
@@ -46,16 +47,30 @@
           1))
 ;; 00420820
 
-(define (number->bytestring n bytes)
-  ;; convert to base 16
-  (let* ((hex (number->string n 16))
-         (l (string-length hex))
-         (binary-chars (string-append (make-string (- bytes l) #\0) hex))
-         (acc (list)))
-    (do ((curr (string->list binary-chars) (drop curr 2)))
-        ((null? curr) (list->string acc))
-        (set! acc (cons (integer->char (string->number (list->string (take curr 2)) 16))
-                        acc)))))
+(define (number->bytevector n bytes)
+  (define (helper n acc)
+        (if (= n 0)
+          (cons n acc)
+          (helper (quotient n 256)
+                  (cons (modulo n 256) acc))
+          )
+    )
+  (let* ((t (helper n (list)))
+         (padding (make-list (- bytes (length t)) 0)))
+    (apply bytevector (reverse (append padding t)))
+    )
+  )
+
+; (define (number->bytestring n bytes)
+;   ;; convert to base 16
+;   (let* ((hex (number->string n 16))
+;          (l (string-length hex))
+;          (binary-chars (string-append (make-string (- bytes l) #\0) hex))
+;          (acc (list)))
+;     (do ((curr (string->list binary-chars) (drop curr 2)))
+;         ((null? curr) (list->string acc))
+;         (set! acc (cons (integer->char (string->number (list->string (take curr 2)) 16))
+;                         acc)))))
 
 (define (sport-read-char sport)
   (if (null? (sport-pos sport))
@@ -309,9 +324,9 @@
 (define get-numbers caddr)
 
 
-(define (data-bitstring directives)
+(define (data-bytevector directives)
   (define addr DATA-OFFSET)
-  (define acc "")
+  (define acc #u8())
   (do ((directives directives (cdr directives)))
       ((null? directives) acc)
       (let* ((curr (car directives))
@@ -321,17 +336,17 @@
         (case (get-type curr)
           ((.space)
            (let* ((size (car numbers))
-                  (bytestring (make-string size #\0)))
-             (set! acc (string-append acc bytestring))
+                  (bv (make-bytevector size 0)))
+             (set! acc (bytevector-append acc bv))
              (set! addr (+ addr size))
              ))
           ((.word)
            (let* ((size (* 4 (length numbers)))
-                  (bytestring (apply string-append
+                  (bv (apply bytevector-append
                                      (map (lambda (n)
-                                            (number->bytestring n 8))
+                                            (number->bytevector n 4))
                                           numbers))))
-             (set! acc (string-append acc bytestring))
+             (set! acc (bytevector-append acc bv))
              (set! addr (+ addr size))
              )))
         )
@@ -341,7 +356,8 @@
 (define outfile (open-output-file "mips-data"))
 (define data-res (pr-res (parse-data file-sport)))
 ; (display data-res)
-(display (data-bitstring (cadr data-res)) outfile)
+
+(write-bytevector (data-bytevector (cadr data-res)) outfile)
 
 ; ; (display (number->byte-string 4327456) outfile)
 ; (display (number->byte-string 4327456 4) outfile)

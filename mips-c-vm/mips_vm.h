@@ -55,6 +55,6 @@ enum REGISTERS {
     RA = 31
 };
 
-enum SYSCALLS { INVALID, PRINT_INT };
+enum SYSCALLS { INVALID, PRINT_INT, PRINT_CHAR=11 };
 
 #endif

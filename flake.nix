@@ -25,6 +25,7 @@
       name = "mips-c-vm";
       buildInputs = with pkgs.chickenPackages.chickenEggs; [
         pkgs.chicken
+        r7rs
         breadline
         pkgs.gnumake
         pkgs.SDL2

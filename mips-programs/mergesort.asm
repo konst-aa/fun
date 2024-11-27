@@ -124,7 +124,27 @@ sll $t2, $t2,  2
 
 add $t2, $t2, $t1
 
+sw $t1, 0($sp)
+sw $t2, 4($sp)
+
 addi $v0, $zero, 1
+
+loop1:
+beq $t1, $t2, end1
+
+lw $a0, 0($t1)
+addi $t1, $t1, 4
+
+syscall
+j loop1
+end1:
+
+addi $v0, $zero, 11
+addi $a0, $zero, 10
+syscall
+
+lw $t1, 0($sp)
+lw $t2, 4($sp)
 
 add $a1, $t1, $zero
 add $a2, $t2, $zero
@@ -137,12 +157,14 @@ jal mergesort
 lw $t1, 0($sp)
 lw $t2, 4($sp)
 
-loop:
-beq $t1, $t2, end
+addi $v0, $zero, 1
+
+loop2:
+beq $t1, $t2, end2
 
 lw $a0, 0($t1)
 addi $t1, $t1, 4
 
 syscall
-j loop
-end:
+j loop2
+end2:
