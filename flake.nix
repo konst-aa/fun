@@ -13,7 +13,7 @@
     packages.x86_64-linux.default = self.packages.x86_64-linux.hello;
 
 
-    devShells.x86_64-linux.autodiff-chicken = pkgs.mkShell {
+    devShells.x86_64-linux.autodiff = pkgs.mkShell {
       name = "autodiff-chicken";
       buildInputs = with pkgs.chickenPackages.chickenEggs; [ 
         pkgs.chicken
